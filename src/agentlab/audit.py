@@ -66,7 +66,58 @@ CREATE TABLE IF NOT EXISTS events (
     notes TEXT
 );
 """
+def create_resource_request_event(claims: dict, run_id: str = "unknown") -> str:
+    """
+    Create a RESOURCE_REQUEST audit event.
+    
+    Args:
+        claims: Decoded JWT claims
+        run_id: The current run ID
+    
+    Returns:
+        event_id: The UUID of the created event
+    """
+    event_id = str(uuid.uuid4())
+    timestamp = datetime.now(timezone.utc).isoformat()
 
+    with sqlite3.connect(AUDIT_DB) as conn:
+        # Create the events table if it doesn't exist
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS events (
+                event_id TEXT PRIMARY KEY,
+                run_id TEXT,
+                event_type TEXT,
+                token_subject TEXT,
+                acting_client TEXT,
+                audience TEXT,
+                result TEXT,
+                timestamp TEXT,
+                claims_json TEXT
+            )
+        """)
+
+        # Insert the RESOURCE_REQUEST event
+        conn.execute(
+            """
+            INSERT INTO events (
+                event_id, run_id, event_type, token_subject, acting_client,
+                audience, result, timestamp, claims_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                event_id,
+                run_id,
+                "RESOURCE_REQUEST",
+                claims.get("sub"),
+                claims.get("azp"),
+                claims.get("aud"),
+                "ALLOW",
+                timestamp,
+                str(claims)  # Store claims for debugging
+            )
+        )
+
+    return event_id
 
 def connect():
     """
