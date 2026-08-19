@@ -395,5 +395,67 @@ def list_events():
     console.print(table)
 
 
+@app.command("record-exchange")
+def record_exchange(
+    parent_token_file: Path = typer.Argument(..., help="Parent token file (e.g., .run/t0.jwt)"),
+    child_token_file: Path = typer.Argument(..., help="Child token file (e.g., .run/t1.jwt)"),
+    actor: str = typer.Option(..., "--actor", help="Client performing the exchange"),
+    run_id: str = typer.Option(None, "--run-id", help="Run ID (auto-generated if not provided)"),
+):
+    """
+    Record a TOKEN_EXCHANGE event linking parent and child tokens.
+    """
+    try:
+        parent_token = read_token(parent_token_file)
+        child_token = read_token(child_token_file)
+        
+        parent_hash = sha256_token(parent_token)
+        child_hash = sha256_token(child_token)
+        
+        child_claims = decode_unverified(child_token)
+        
+        if run_id is None:
+            run_id = create_run_id()
+        
+        event_id = str(uuid.uuid4())
+        timestamp = datetime.now(timezone.utc).isoformat()
+        
+        with sqlite3.connect(AUDIT_DB) as conn:
+            conn.execute(
+                """
+                INSERT INTO events (
+                    event_id, run_id, timestamp, event_type,
+                    token_subject, acting_client,
+                    parent_token_hash, token_hash,
+                    authorized_party, audience,
+                    result, notes
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event_id,
+                    run_id,
+                    timestamp,
+                    "TOKEN_EXCHANGE",
+                    child_claims.get("sub"),
+                    actor,
+                    parent_hash,
+                    child_hash,
+                    child_claims.get("azp"),
+                    child_claims.get("aud"),
+                    "SUCCESS",
+                    f"Exchanged {actor} -> {child_claims.get('aud')}"
+                )
+            )
+        
+        console.print(f"[green]TOKEN_EXCHANGE recorded.[/green]")
+        console.print(f"run_id:      {run_id}")
+        console.print(f"event_id:    {event_id}")
+        console.print(f"parent_hash: {parent_hash[:12]}...")
+        console.print(f"child_hash:  {child_hash[:12]}...")
+        
+    except Exception as exc:
+        console.print(f"[red]Error recording exchange: {exc}[/red]")
+        raise typer.Exit(code=1)
+
 if __name__ == "__main__":
     app()
