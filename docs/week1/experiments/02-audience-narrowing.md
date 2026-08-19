@@ -23,7 +23,7 @@ cd ~/Documents/a-a/week1/agent-auth-lab
 source .venv/bin/activate
 
 ./scripts/get-user-token.sh
-export ORCHESTRATOR_SECRET="QEoYuStGh1zEjWPggQ11Lms4lxSJEVdlsovIeXrSOZdFgYVVCTbI9RwsTdcuAxLUGzSwH5h6JOAm3uxXJmDFIB"
+export ORCHESTRATOR_SECRET="YOUR_ORCHESTRATOR_SECRET"
 ./scripts/exchange-orchestrator.sh
-export SUBAGENT_SECRET="gwpKWqcXXxbvi6527nq4jL2ac77xOvOoajEVEZuSe09mdXBicRSMVoebvMlk5nymjCCzcPLqrMUkvCjV4bb3Uj"
+export SUBAGENT_SECRET="YOUR_SUBAGENT_SECRET"
 ./scripts/ex_subagent.sh
