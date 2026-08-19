@@ -4,6 +4,5 @@ data/*.db
 __pycache__/
 .venv/
 *.pyc
-.run/
 audit.db
 data/*.db
